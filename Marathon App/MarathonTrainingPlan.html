@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Runna-Style London Marathon Plan with Varied Workouts</title>
+    <style>
+      :root {
+        --bg: #0e1015;
+        --accent: #00f59b;
+        --card: #151821;
+        --text: #f1f5f9;
+        --muted: #9ca3af;
+        --shadow: rgba(0, 0, 0, 0.25);
+        --easy: #3b82f6;
+        --steady: #22c55e;
+        --tempo: #fb923c;
+        --interval: #ef4444;
+        --marathon: #facc15;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100%;
+        overflow: hidden;
+      }
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      header {
+        text-align: center;
+        padding: 16px;
+        background: #10131c;
+      }
+      h1 {
+        font-size: 1.5rem;
+        color: var(--accent);
+        margin: 0;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 6px;
+      }
+
+      .swiper-container {
+        flex: 1;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 20px;
+      }
+      .weekcard {
+        flex: 0 0 90%;
+        scroll-snap-align: center;
+        margin: 0 5%;
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px var(--shadow);
+        padding: 20px;
+        transition: transform 0.3s;
+      }
+
+      .weekheader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .weektitle {
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+      .phase {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        vertical-align: top;
+      }
+      th {
+        text-align: left;
+        color: var(--muted);
+      }
+      td {
+        background: #1b1f28;
+        border-radius: 12px;
+      }
+      label {
+        display: flex;
+        align-items: flex-start;
+        cursor: pointer;
+      }
+
+      .workout-easy {
+        background-color: var(--easy);
+        border-radius: 8px;
+        padding: 6px;
+      }
+      .workout-steady {
+        background-color: var(--steady);
+        border-radius: 8px;
+        padding: 6px;
+      }
+      .workout-tempo {
+        background-color: var(--tempo);
+        border-radius: 8px;
+        padding: 6px;
+      }
+      .workout-interval {
+        background-color: var(--interval);
+        border-radius: 8px;
+        padding: 6px;
+      }
+      .workout-marathon {
+        background-color: var(--marathon);
+        border-radius: 8px;
+        padding: 6px;
+      }
+
+      input[type="checkbox"] {
+        margin-right: 10px;
+        transform: scale(1.2);
+        cursor: pointer;
+        margin-top: 3px;
+      }
+      .completed {
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        background: #10131c;
+      }
+      .btn {
+        background: var(--accent);
+        border: none;
+        color: #000;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        background: #00d98c;
+      }
+
+      .exercise-list {
+        margin-top: 6px;
+        font-size: 0.85rem;
+        color: var(--muted);
+        padding-left: 18px;
+      }
+
+      @media (max-width: 768px) {
+        .weekcard {
+          flex: 0 0 96%;
+          margin: 0 2%;
+        }
+        h1 {
+          font-size: 1.3rem;
+        }
+        .subtitle {
+          font-size: 0.85rem;
+        }
+        th,
+        td {
+          font-size: 0.85rem;
+          padding: 8px 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>London Marathon Training Plan</h1>
+        <div class="subtitle">
+          Start: 4 Nov 2025 · Race: 26 Apr 2026 · Goal: Sub-3:00 (4:15/km)
+        </div>
+        <div class="subtitle">
+          Train: Mon, Wed, Thu, Fri, Sat · Long Run: Thursday
+        </div>
+      </header>
+
+      <div class="swiper-container" id="weeksContainer"></div>
+
+      <div class="controls">
+        <button class="btn" id="prevWeek">◀ Prev</button>
+        <button class="btn" id="expandAll">Expand all</button>
+        <button class="btn" id="collapseAll">Collapse all</button>
+        <button class="btn" id="nextWeek">Next ▶</button>
+      </div>
+    </div>
+
+    <script>
+      const startDate = new Date("2025-11-04");
+
+      const runVariations = [
+        { text: "Easy Run — 6–8 km @ 5:20–5:40/km", class: "workout-easy" },
+        {
+          text: "Steady Run — 8–10 km @ 4:50–5:10/km",
+          class: "workout-steady",
+        },
+        {
+          text: "Tempo Run — 6–8 km with last 2 km @ 4:20–4:30/km",
+          class: "workout-tempo",
+        },
+        {
+          text: "Intervals — 5×1 km @ 3:55–4:05/km (500m jog recoveries)",
+          class: "workout-interval",
+        },
+        {
+          text: "Fartlek — 8 km alternating 1 min fast / 2 min easy @ 4:15–4:30/km",
+          class: "workout-tempo",
+        },
+        {
+          text: "Hill Repeats — 6×200m hill @ hard effort, jog back",
+          class: "workout-interval",
+        },
+        {
+          text: "Progressive Long Run — first half easy, second half increasing pace toward marathon pace @ 4:15/km",
+          class: "workout-marathon",
+        },
+      ];
+
+      const strengthMobilityVariants = [
+        `<ul class="exercise-list"><li>Plank: 3×45 sec</li><li>Side Plank: 3×30 sec each side</li><li>Glute Bridges: 3×12 reps</li><li>Walking Lunges: 3×12 reps per leg</li><li>Hip Flexor Stretch: 2×30 sec per side</li><li>Foam Roller Quads/Hamstrings/Calves: 5 min total</li></ul>`,
+        `<ul class="exercise-list"><li>Single-Leg Deadlift: 3×10 per leg</li><li>Goblet Squats: 3×12 reps</li><li>Monster Walks with Band: 2×12 steps each direction</li><li>Thoracic Rotation: 2×10 per side</li><li>Hip Circles & Leg Swings: 2×10 per leg</li><li>Calf Raises: 3×15 reps</li></ul>`,
+        `<ul class="exercise-list"><li>Push-Ups: 3×12</li><li>Bent-Over Rows: 3×12</li><li>Side-Lying Leg Lifts: 3×15 per side</li><li>Russian Twists: 3×20</li><li>Hip Flexor Stretch: 2×30 sec per side</li><li>Foam Roller Glutes/Hamstrings: 5 min total</li></ul>`,
+      ];
+
+      function addDays(date, days) {
+        const d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
+      }
+      function formatDate(d) {
+        return d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      const weeks = [];
+      for (let w = 1; w <= 25; w++) {
+        const start = addDays(startDate, (w - 1) * 7);
+        const label = `Week ${w} — ${formatDate(start)}`;
+        const phase =
+          w <= 6 ? "Base" : w <= 14 ? "Build" : w <= 21 ? "Peak" : "Taper";
+        const recovery = w % 3 === 0 && w < 20;
+        const longRunKm =
+          w <= 6
+            ? 20 + w
+            : w <= 14
+            ? 27 + (w - 7) * 1.2
+            : w <= 21
+            ? 32 + (w - 14) * 0.8
+            : [28, 20, 12, 8][w - 22];
+        const strengthVariant =
+          strengthMobilityVariants[w % strengthMobilityVariants.length];
+        weeks.push({ label, phase, recovery, longRunKm, strengthVariant });
+      }
+
+      const container = document.getElementById("weeksContainer");
+
+      weeks.forEach((wk, i) => {
+        const weekDiv = document.createElement("div");
+        weekDiv.className = "weekcard";
+        if (i === 0) weekDiv.classList.add("active");
+
+        const days = ["Mon", "Wed", "Thu", "Fri", "Sat"];
+        const workouts = [
+          {
+            run: runVariations[i % runVariations.length],
+            strength: wk.strengthVariant,
+          },
+          { run: runVariations[(i + 1) % runVariations.length] },
+          {
+            run: {
+              text: `Long Run — ${wk.longRunKm} km, ${
+                runVariations[(i + 2) % runVariations.length].text
+              }`,
+              class: "workout-marathon",
+            },
+          },
+          { run: runVariations[(i + 3) % runVariations.length] },
+          { run: null, strength: wk.strengthVariant },
+        ];
+
+        let rows = "";
+        days.forEach((day, idx) => {
+          const id = `week${i}-${day}`;
+          let content = "";
+          if (workouts[idx].run)
+            content = `<div class='${workouts[idx].run.class}'>${workouts[idx].run.text}</div>`;
+          if (workouts[idx].strength) content += workouts[idx].strength;
+          rows += `<tr><td>${day}</td><td><div class='workout-box'><label><input type='checkbox' data-id='${id}'> ${content}</label></div></td></tr>`;
+        });
+
+        weekDiv.innerHTML = `<div class="weekheader">
+        <div class="weektitle">${wk.label}</div>
+        <div class="phase">${wk.phase}${wk.recovery ? " · Recovery" : ""}</div>
+      </div>
+      <table><thead><tr><th>Day</th><th>Workout</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+        container.appendChild(weekDiv);
+      });
+
+      const weekCards = document.querySelectorAll(".weekcard");
+      let currentWeek = 0;
+      function showWeek(index) {
+        if (index < 0 || index >= weekCards.length) return;
+        currentWeek = index;
+        weekCards.forEach((c) => c.classList.remove("active"));
+        weekCards[index].scrollIntoView({
+          behavior: "smooth",
+          inline: "center",
+        });
+        weekCards[index].classList.add("active");
+      }
+
+      document.getElementById("nextWeek").onclick = () =>
+        showWeek(currentWeek + 1);
+      document.getElementById("prevWeek").onclick = () =>
+        showWeek(currentWeek - 1);
+      document.getElementById("expandAll").onclick = () =>
+        document.querySelectorAll("details").forEach((d) => (d.open = true));
+      document.getElementById("collapseAll").onclick = () =>
+        document.querySelectorAll("details").forEach((d) => (d.open = false));
+
+      const checkboxes = document.querySelectorAll("input[type=checkbox]");
+      checkboxes.forEach((cb) => {
+        const id = cb.dataset.id;
+        if (localStorage.getItem(id) == "true") cb.checked = true;
+        if (cb.checked) cb.parentElement.classList.add("completed");
+        cb.addEventListener("change", () => {
+          cb.parentElement.classList.toggle("completed", cb.checked);
+          localStorage.setItem(id, cb.checked);
+        });
+      });
+    </script>
+  </body>
+</html>
